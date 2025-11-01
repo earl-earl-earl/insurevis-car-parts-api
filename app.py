@@ -20,9 +20,11 @@ def load_data():
 def home():
     return jsonify({
         "message": "Car Makes and Models API",
+        "version": "2.0",
         "endpoints": {
-            "/api/brands": "Get all car brands and models",
+            "/api/brands": "Get all car brands and models with years",
             "/api/brands/<brand_name>": "Get models for a specific brand",
+            "/api/brands/search?model=<name>&year=<year>": "Search for models by name or year",
             "/api/count": "Get statistics about brands and models"
         }
     })
@@ -48,6 +50,43 @@ def get_brand_models(brand_name):
     
     return jsonify({"error": f"Brand '{brand_name}' not found"}), 404
 
+@app.route('/api/brands/search', methods=['GET'])
+def search_models():
+    """Search for models by name or year"""
+    from flask import request
+    
+    data = load_data()
+    
+    if "error" in data:
+        return jsonify(data), 500
+    
+    model_name = request.args.get('model', '').lower()
+    year = request.args.get('year', '')
+    
+    results = []
+    
+    for brand in data.get('brands', []):
+        for model in brand.get('models', []):
+            match = True
+            
+            if model_name and model_name not in model.get('model_name', '').lower():
+                match = False
+            
+            if year and str(model.get('year', '')) != year:
+                match = False
+            
+            if match:
+                results.append({
+                    'brand': brand['name'],
+                    'model_name': model.get('model_name'),
+                    'year': model.get('year')
+                })
+    
+    return jsonify({
+        "count": len(results),
+        "results": results
+    })
+
 @app.route('/api/count', methods=['GET'])
 def get_statistics():
     """Get statistics about the data"""
@@ -60,9 +99,21 @@ def get_statistics():
     total_brands = len(brands)
     total_models = sum(len(brand.get('models', [])) for brand in brands)
     
+    # Get year range
+    all_years = []
+    for brand in brands:
+        for model in brand.get('models', []):
+            year = model.get('year')
+            if year:
+                all_years.append(year)
+    
     return jsonify({
         "total_brands": total_brands,
         "total_models": total_models,
+        "year_range": {
+            "min": min(all_years) if all_years else None,
+            "max": max(all_years) if all_years else None
+        },
         "brands": [brand['name'] for brand in brands]
     })
 

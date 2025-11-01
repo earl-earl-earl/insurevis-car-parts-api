@@ -22,9 +22,11 @@ Returns information about available endpoints.
 ```json
 {
   "message": "Car Makes and Models API",
+  "version": "2.0",
   "endpoints": {
-    "/api/brands": "Get all car brands and models",
+    "/api/brands": "Get all car brands and models with years",
     "/api/brands/<brand_name>": "Get models for a specific brand",
+    "/api/brands/search?model=<name>&year=<year>": "Search for models by name or year",
     "/api/count": "Get statistics about brands and models"
   }
 }
@@ -34,7 +36,7 @@ Returns information about available endpoints.
 ```
 GET /api/brands
 ```
-Returns all car brands and their models.
+Returns all car brands and their models with year information.
 
 **Response:**
 ```json
@@ -42,9 +44,17 @@ Returns all car brands and their models.
   "brands": [
     {
       "name": "Toyota",
-      "models": ["Camry", "Corolla", "RAV4", ...]
-    },
-    ...
+      "models": [
+        {
+          "model_name": "Camry",
+          "year": 1997
+        },
+        {
+          "model_name": "Corolla",
+          "year": 1995
+        }
+      ]
+    }
   ]
 }
 ```
@@ -64,21 +74,66 @@ GET /api/brands/toyota
 ```json
 {
   "name": "Toyota",
-  "models": ["Camry", "Corolla", "RAV4", ...]
+  "models": [
+    {
+      "model_name": "Camry",
+      "year": 1997
+    },
+    {
+      "model_name": "Corolla",
+      "year": 1995
+    }
+  ]
 }
 ```
 
-### 4. Get Statistics
+### 4. Search Models
+```
+GET /api/brands/search?model=<name>&year=<year>
+```
+Search for models by name or year. Both parameters are optional.
+
+**Examples:**
+```
+GET /api/brands/search?model=camry
+GET /api/brands/search?year=2020
+GET /api/brands/search?model=corolla&year=1995
+```
+
+**Response:**
+```json
+{
+  "count": 2,
+  "results": [
+    {
+      "brand": "Toyota",
+      "model_name": "Camry",
+      "year": 1997
+    },
+    {
+      "brand": "Lexus",
+      "model_name": "Camry",
+      "year": 2002
+    }
+  ]
+}
+```
+
+### 5. Get Statistics
 ```
 GET /api/count
 ```
-Returns statistics about the dataset.
+Returns statistics about the dataset including year range.
 
 **Response:**
 ```json
 {
   "total_brands": 95,
   "total_models": 2450,
+  "year_range": {
+    "min": 1980,
+    "max": 2025
+  },
   "brands": ["Abarth", "Aito", "Alfa Romeo", ...]
 }
 ```
@@ -168,9 +223,11 @@ car makes and models/
 - **Gunicorn**: WSGI HTTP Server
 - **Flask-CORS**: Cross-Origin Resource Sharing support
 
-## Data Source
+## Data Structure
 
-The API serves data from `data.json` which contains 95+ car brands and their respective models.
+The API serves data from `data.json` which contains 95+ car brands with their respective models and year information. Each model entry includes:
+- `model_name`: The name of the car model
+- `year`: The year the model was introduced or available
 
 ## Error Handling
 
